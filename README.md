@@ -1,184 +1,110 @@
 # mini-juego-
-C++
-#include <graphics.h>
-#include <conio.h>
-#include <dos.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <time.h>
+#include <iostream>
+#include <vector>
+#include <string>
 
-union REGS mouseData;
+using namespace std;
 
-// Obtiene la posición actual del mouse y determina si el botón izquierdo está presionado
-void obtenerMouse(int *x, int *y, int *clic) {
-    mouseData.x.ax = 3;
-    int86(0x33, &mouseData, &mouseData);
+struct Tarea {
+    string descripcion;
+    bool completada;
+    string prioridad; // Alta, Media, Baja
+};
 
-    *x = mouseData.x.cx;
-    *y = mouseData.x.dx;
-
-    *clic = mouseData.x.bx & 1;
-}
-
-// Inicializa el mouse
-void iniciarMouse() {
-    mouseData.x.ax = 0;
-    int86(0x33, &mouseData, &mouseData);
-}
-
-// Muestra el cursor del mouse
-void mostrarMouse() {
-    mouseData.x.ax = 1;
-    int86(0x33, &mouseData, &mouseData);
-}
-
-// Oculta el cursor del mouse
-void ocultarMouse() {
-    mouseData.x.ax = 2;
-    int86(0x33, &mouseData, &mouseData);
-}
-
-// Genera una nueva posición aleatoria para el objetivo
-void generarObjetivo(int *x, int *y, int tamano) {
-    int ancho = getmaxx(); // 640
-    int alto = getmaxy();  // 480
-    
-    *x = random(ancho - 30) + 10; // Corregido: random (con n)
-    *y = random(alto - 110) + 80; // Corregido: random (con n)
-}
-
-// Dibuja el objetivo
-void dibujarObjetivo(int x, int y, int tamano) {
-    setfillstyle(SOLID_FILL, RED);
-    bar(x, y, x + tamano, y + tamano);
-}
-
-// Dibuja el título, contador y tiempo
-void mostrarInformacion(int objetivo, int total, float tiempo) {
-    char texto[80];
-
-    setcolor(WHITE);
-    settextstyle(DEFAULT_FONT, HORIZ_DIR, 1);
-    outtextxy(10, 10, "MINIJUEGO");
-
-    sprintf(texto, "Objetivos: %d/%d", objetivo, total);
-    outtextxy(10, 35, texto);
-
-    sprintf(texto, "Tiempo: %.2f s", tiempo);
-    outtextxy(520, 35, texto);
-}
+void agregarTarea(vector<Tarea>& tareas);
+void mostrarTareas(const vector<Tarea>& tareas);
+void completarTarea(vector<Tarea>& tareas);
 
 int main() {
-    int driver = DETECT;
-    int modo;
+    vector<Tarea> tareas;
+    int opcion = 0;
 
-    int xMouse;
-    int yMouse;
-    int clic;
-    int clicAnterior = 0;
+    while (opcion != 4) {
+        cout << "\nLISTA DE TAREAS\n\n";
+        cout << "1. Agregar tarea\n";
+        cout << "2. Mostrar tareas\n";
+        cout << "3. Marcar tarea como completada\n";
+        cout << "4. Salir\n\n";
+        cout << "Seleccione una opción: ";
 
-    int tiempoActivo = 0;
-    clock_t inicio;
-    clock_t tiempoActual;
-    clock_t tiempoFinal;
-
-    float segundos = 0.0; // Corregido: Inicializado en 0.0
-
-    // Inicializar gráficos
-    initgraph(&driver, &modo, "C://TC//BGI");
-
-    // Verificar que los gráficos se hayan iniciado correctamente
-    if (graphresult() != grOk) {
-        printf("No se pudo iniciar el modo grafico.");
-        getch();
-        return 1;
-    }
-
-    // Inicializar el generador de números aleatorios
-    randomize();
-
-    // Inicializar y mostrar el mouse
-    iniciarMouse();
-    mostrarMouse();
-
-    // Primera posición del objetivo
-    int xObjetivo;
-    int yObjetivo;
-    int tamanoObjetivo = 15;
-    generarObjetivo(&xObjetivo, &yObjetivo, tamanoObjetivo);
-
-    // El juego termina cuando se completan 10 objetivos
-    int objetivo = 0;
-    while (objetivo < 10) {
-        // Limpiar la pantalla
-        cleardevice();
-
-        // Calcular el tiempo transcurrido
-        if (tiempoActivo == 1) {
-            tiempoActual = clock();
-            segundos = (float)(tiempoActual - inicio) / CLOCKS_PER_SEC;
+        if (!(cin >> opcion)) {
+            cin.clear();
+            cin.ignore(1000, '\n');
+            cout << "Opción no válida.\n";
+            continue;
         }
+        cin.ignore();
 
-        // Mostrar información
-        mostrarInformacion(objetivo, 10, segundos);
-
-        // Dibujar objetivo
-        dibujarObjetivo(xObjetivo, yObjetivo, tamanoObjetivo);
-
-        // Obtener posición y estado del mouse
-        obtenerMouse(&xMouse, &yMouse, &clic);
-
-        // Detectar un nuevo clic
-        if (clic == 1 && clicAnterior == 0) {
-            // Corregido: Cambio de 'and' por '&&'
-            if (xMouse >= xObjetivo && xMouse <= xObjetivo + tamanoObjetivo &&
-                yMouse >= yObjetivo && yMouse <= yObjetivo + tamanoObjetivo) {
-                
-                // Si es el primer objetivo acertado, comienza el cronómetro
-                if (tiempoActivo == 0) {
-                    tiempoActivo = 1;
-                    inicio = clock();
-                }
-
-                // Aumentar la cantidad de objetivos completados
-                objetivo++;
-
-                // Generar una nueva posición
-                if (objetivo < 10) {
-                    generarObjetivo(&xObjetivo, &yObjetivo, tamanoObjetivo);
-                }
-            }
+        switch (opcion) {
+            case 1:
+                agregarTarea(tareas);
+                break;
+            case 2:
+                mostrarTareas(tareas);
+                break;
+            case 3:
+                completarTarea(tareas);
+                break;
+            case 4:
+                cout << "Saliendo del programa...\n";
+                break;
+            default:
+                cout << "Opción no válida.\n";
+                break;
         }
-
-        // Guardar el estado anterior del clic
-        clicAnterior = clic;
-
-        // Pausa para evitar consumo excesivo del CPU
-        delay(20);
     }
-
-    // Calcular el tiempo final de la partida
-    tiempoFinal = clock();
-    segundos = (float)(tiempoFinal - inicio) / CLOCKS_PER_SEC;
-
-    // Ocultar mouse mientras se muestra la pantalla final
-    ocultarMouse();
-    
-    cleardevice();
-
-    settextstyle(DEFAULT_FONT, HORIZ_DIR, 1);
-    outtextxy(240, 150, "JUEGO TERMINADO");
-
-    char textoFinal[50];
-    sprintf(textoFinal, "Tiempo: %.2f segundos", segundos);
-    outtextxy(220, 240, textoFinal);
-
-    outtextxy(205, 290, "Presione una tecla para salir");
-
-    // Esperar antes de cerrar
-    getch();
-
-    closegraph();
 
     return 0;
+}
+
+void agregarTarea(vector<Tarea>& tareas) {
+    Tarea nuevaTarea;
+    cout << "Ingrese la tarea: ";
+    getline(cin, nuevaTarea.descripcion);
+    
+    int opcPrioridad = 0;
+    cout << "Seleccione la prioridad (1. Alta, 2. Media, 3. Baja): ";
+    cin >> opcPrioridad;
+    cin.ignore();
+
+    switch (opcPrioridad) {
+        case 1: nuevaTarea.prioridad = "Alta"; break;
+        case 2: nuevaTarea.prioridad = "Media"; break;
+        case 3: nuevaTarea.prioridad = "Baja"; break;
+        default: nuevaTarea.prioridad = "Media"; break;
+    }
+
+    nuevaTarea.completada = false;
+    tareas.push_back(nuevaTarea);
+    cout << "Tarea agregada correctamente.\n";
+}
+
+void mostrarTareas(const vector<Tarea>& tareas) {
+    if (tareas.empty()) {
+        cout << "\nNo hay tareas en la lista.\n";
+        return;
+    }
+    cout << "\nTAREAS\n";
+    for (size_t i = 0; i < tareas.size(); ++i) {
+        string estado = tareas[i].completada ? "Completada" : "Pendiente";
+        cout << (i + 1) << ". [" << estado << "] [" << tareas[i].prioridad << "] " << tareas[i].descripcion << "\n";
+    }
+}
+
+void completarTarea(vector<Tarea>& tareas) {
+    if (tareas.empty()) {
+        cout << "\nNo hay tareas registradas para completar.\n";
+        return;
+    }
+
+    mostrarTareas(tareas);
+    cout << "\nSeleccione la tarea: ";
+    int indice;
+    if (cin >> indice && indice >= 1 && indice <= static_cast<int>(tareas.size())) {
+        tareas[indice - 1].completada = true;
+        cout << "Tarea marcada como completada.\n";
+    } else {
+        cout << "Opción no válida.\n";
+    }
+    cin.ignore();
 }
